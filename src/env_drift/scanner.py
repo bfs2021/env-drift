@@ -178,8 +178,10 @@ def _pending_removal(key, snapshots, values_by_env, defined_in, present, path=No
     )
 
 
-def _presence_check(key, defined_in, absent_in, present, required, path=None):
+def _presence_check(key, defined_in, absent_in, present, required, path=None, orphan_required=None):
     """Report absence of a key: orphaned (one env) or missing (some envs)."""
+    if orphan_required is None:
+        orphan_required = required
     if absent_in and not defined_in:
         return EnvDrift(
             key=key,
@@ -198,7 +200,7 @@ def _presence_check(key, defined_in, absent_in, present, required, path=None):
         return EnvDrift(
             key=key,
             drift_type="orphaned_key",
-            severity="error" if required else "warning",
+            severity="error" if orphan_required else "warning",
             message=(
                 f"{key!r} exists only in {defined_in[0]} and in no other environment "
                 f"({', '.join(absent_in)})"
@@ -294,9 +296,10 @@ def scan(snapshots: list[EnvSnapshot], config: Config) -> list[EnvDrift]:
         required = key in config.required_keys or (
             key in config.required_in_prod and config.prod_env in names
         )
+        orphan_required = key in config.required_keys
         path = _anchor_path(snapshots, defined_in)
 
-        presence = _presence_check(key, defined_in, absent_in, present, required, path=path)
+        presence = _presence_check(key, defined_in, absent_in, present, required, path=path, orphan_required=orphan_required)
         if presence is not None:
             drifts.append(presence)
 
