@@ -116,6 +116,18 @@ def test_expanded_values_are_compared_not_their_references(tmp_path):
     assert found[0].environments == {"dev": "shared.example/v1", "prod": "shared.example/v2"}
 
 
+def test_commented_export_key_live_elsewhere_is_pending_removal(tmp_path):
+    # End-to-end through the real parse -> discover -> load -> scan chain: a
+    # commented-out ``export KEY=...`` is a disabled copy of the live key, so the
+    # report must say "pending removal" rather than "removed".
+    (tmp_path / ".env.dev").write_text("export LEGACY=1\nA=1\n", encoding="utf-8")
+    (tmp_path / ".env.prod").write_text("# export LEGACY=1\nA=1\n", encoding="utf-8")
+    files = discover_env_files(tmp_path)
+    found = only(scan(load_snapshots(files), Config()), "pending_removal")
+    assert [d.key for d in found] == ["LEGACY"]
+    assert found[0].environments["prod"] is None
+
+
 def test_shape_mismatch_ignores_value_expansion_differences():
     # A=${BASE}/x where BASE is a url in both envs stays the same shape.
     a = EnvSnapshot("dev", {"BASE": "https://a", "API": "${BASE}/x"}, ())

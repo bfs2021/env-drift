@@ -35,6 +35,21 @@ class ParsedEnv:
         return len(self.values)
 
 
+def _strip_export_prefix(line: str) -> str:
+    """Drop a leading ``export`` keyword from an assignment line.
+
+    Shared by the active and the commented-out paths on purpose. A commented
+    assignment is the same line with a ``#`` in front of it, so it has to be
+    normalized the same way, or ``# export KEY=value`` is recorded under the
+    key ``"export KEY"`` and never matches the live ``KEY`` -- which silently
+    drops it from the "pending removal" signal.
+    """
+    for prefix in _EXPORT_PREFIXES:
+        if line.startswith(prefix):
+            return line[len(prefix) :].lstrip()
+    return line
+
+
 def _strip_inline_comment(raw: str) -> str:
     """Drop a trailing ``# comment`` from an *unquoted* value.
 
@@ -142,7 +157,11 @@ def parse_text(text: str) -> ParsedEnv:
             continue
 
         if line.startswith("#"):
-            body = line.lstrip("#").strip()
+            # ``# export KEY=value`` is a disabled copy of ``export KEY=value``,
+            # so strip the same prefix the active path strips. Without this the
+            # key is recorded as ``"export KEY"`` and pending_removal never
+            # fires for commented-out exports.
+            body = _strip_export_prefix(line.lstrip("#").strip())
             assignment = _split_assignment(body)
             if assignment is None:
                 i += 1
@@ -153,10 +172,7 @@ def parse_text(text: str) -> ParsedEnv:
             i += 1
             continue
 
-        for prefix in _EXPORT_PREFIXES:
-            if line.startswith(prefix):
-                line = line[len(prefix) :].lstrip()
-                break
+        line = _strip_export_prefix(line)
 
         assignment = _split_assignment(line)
         if assignment is None:
