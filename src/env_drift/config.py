@@ -83,17 +83,32 @@ def _read_table(path: Path) -> dict[str, object]:
         tool = data.get("tool")
         if not isinstance(tool, dict):
             return {}
-        table = tool.get("env-drift") or tool.get("env_drift")
+        if "env-drift" in tool:
+            table = tool.get("env-drift")
+        elif "env_drift" in tool:
+            table = tool.get("env_drift")
+        else:
+            table = None
         return table if isinstance(table, dict) else {}
 
     # Standalone files use ``[env-drift]``, but ``[tool.env-drift]`` is accepted
     # too so a config table can be copied straight out of a pyproject.toml.
-    table = data.get("env-drift") or data.get("env_drift")
+    if "env-drift" in data:
+        table = data.get("env-drift")
+    elif "env_drift" in data:
+        table = data.get("env_drift")
+    else:
+        table = None
     if isinstance(table, dict):
         return table
     tool = data.get("tool")
     if isinstance(tool, dict):
-        nested = tool.get("env-drift") or tool.get("env_drift")
+        if "env-drift" in tool:
+            nested = tool.get("env-drift")
+        elif "env_drift" in tool:
+            nested = tool.get("env_drift")
+        else:
+            nested = None
         if isinstance(nested, dict):
             return nested
     return {}
