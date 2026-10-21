@@ -265,7 +265,7 @@ def _value_check(key, values_by_env, defined_in, present, config, path=None):
             EnvDrift(
                 key=key,
                 drift_type="empty_value",
-                severity="error" if key in config.required_keys else "warning",
+                severity="error" if key in config.required_keys or key in config.required_in_prod else "warning",
                 message=f"{key!r} is empty in {', '.join(empty_in)}",
                 environments=present,
                 path=path,
