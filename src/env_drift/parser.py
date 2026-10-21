@@ -147,6 +147,8 @@ def parse_text(text: str) -> ParsedEnv:
     values: dict[str, str] = {}
     commented: list[str] = []
 
+    if text.startswith("\ufeff"):
+        text = text[1:]
     raw_lines = text.splitlines()
     i = 0
     while i < len(raw_lines):
@@ -222,5 +224,5 @@ def parse_text(text: str) -> ParsedEnv:
 
 def parse_file(path: str | Path) -> ParsedEnv:
     """Parse the dotenv file at ``path`` using UTF-8, replacing bad bytes."""
-    text = Path(path).read_text(encoding="utf-8", errors="replace")
+    text = Path(path).read_text(encoding="utf-8-sig", errors="replace")
     return parse_text(text)
