@@ -34,7 +34,7 @@ from .diff import diff_snapshots
 from .discovery import discover_env_files
 from .masking import mask_value
 from .report import FORMATS, build_payload, render
-from .scanner import load_snapshots, scan
+from .scanner import load_snapshots, scan, AmbiguousEnvironmentError
 
 EXIT_OK = 0
 EXIT_DRIFT = 1
@@ -170,7 +170,10 @@ def _load(args: argparse.Namespace):
 def _cmd_scan(args: argparse.Namespace) -> int:
     root, config, files = _load(args)
     snapshots = load_snapshots(files)
-    drifts = scan(snapshots, config)
+    try:
+        drifts = scan(snapshots, config)
+    except AmbiguousEnvironmentError as exc:
+        raise UsageError(str(exc)) from exc
     mask = not args.show_secrets
 
     print(

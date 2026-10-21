@@ -276,8 +276,24 @@ def _value_check(key, values_by_env, defined_in, present, config, path=None):
     return findings
 
 
+class AmbiguousEnvironmentError(ValueError):
+    """Raised when two or more env files share the same environment name."""
+
+
 def scan(snapshots: list[EnvSnapshot], config: Config) -> list[EnvDrift]:
     """Compare every environment against every other and report drift."""
+    by_name: dict[str, list[EnvSnapshot]] = {}
+    for snapshot in snapshots:
+        by_name.setdefault(snapshot.name, []).append(snapshot)
+
+    ambiguous = {name: group for name, group in by_name.items() if len(group) > 1}
+    if ambiguous:
+        listing = "; ".join(
+            f"{name}: {', '.join(str(s.path) for s in group)}"
+            for name, group in sorted(ambiguous.items())
+        )
+        raise AmbiguousEnvironmentError(f"duplicate environment name(s): {listing}")
+
     names = [s.name for s in snapshots]
     values_by_env = {s.name: _resolved(s.values, s.expanded) for s in snapshots}
     found_keys = {key for values in values_by_env.values() for key in values}
