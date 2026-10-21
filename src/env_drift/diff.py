@@ -18,6 +18,8 @@ which is the thing a reviewer needs to see.
 
 from __future__ import annotations
 
+from .scanner import _resolved
+
 from dataclasses import dataclass
 
 from .expand import expand_all
@@ -58,8 +60,8 @@ class DiffEntry:
 
 def diff_snapshots(source: EnvSnapshot, target: EnvSnapshot) -> list[DiffEntry]:
     """Return the symmetric difference from ``source`` to ``target``."""
-    left = expand_all(source.values)
-    right = expand_all(target.values)
+    left = _resolved(source.values, source.expanded)
+    right = _resolved(target.values, target.expanded)
 
     entries: list[DiffEntry] = []
     for key in sorted(set(left) | set(right)):
