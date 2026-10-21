@@ -34,6 +34,7 @@ from .diff import diff_snapshots
 from .discovery import discover_env_files
 from .masking import mask_value
 from .report import FORMATS, build_payload, render
+from .parser import EnvParseError
 from .scanner import load_snapshots, scan, AmbiguousEnvironmentError
 
 EXIT_OK = 0
@@ -174,6 +175,8 @@ def _cmd_scan(args: argparse.Namespace) -> int:
         drifts = scan(snapshots, config)
     except AmbiguousEnvironmentError as exc:
         raise UsageError(str(exc)) from exc
+    except EnvParseError as exc:
+        raise UsageError(str(exc)) from exc
     mask = not args.show_secrets
 
     print(
@@ -212,8 +215,11 @@ def _cmd_diff(args: argparse.Namespace) -> int:
             )
         return matches[0]
 
-    source = load_snapshots([resolve(args.env_a)])[0]
-    target = load_snapshots([resolve(args.env_b)])[0]
+    try:
+        source = load_snapshots([resolve(args.env_a)])[0]
+        target = load_snapshots([resolve(args.env_b)])[0]
+    except EnvParseError as exc:
+        raise UsageError(str(exc)) from exc
     entries = diff_snapshots(source, target)
     mask = not args.show_secrets
 

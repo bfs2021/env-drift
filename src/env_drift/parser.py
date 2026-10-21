@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__all__ = ["ParsedEnv", "parse_file", "parse_text"]
+__all__ = ["ParsedEnv", "parse_file", "parse_text", "EnvParseError"]
 
 _EXPORT_PREFIXES = ("export ", "export\t")
 _QUOTES = ("'", '"')
@@ -222,7 +222,20 @@ def parse_text(text: str) -> ParsedEnv:
     return ParsedEnv(values=values, commented_keys=tuple(commented))
 
 
+class EnvParseError(Exception):
+    """Raised when an env file exists but cannot be read."""
+
+
 def parse_file(path: str | Path) -> ParsedEnv:
-    """Parse the dotenv file at ``path`` using UTF-8, replacing bad bytes."""
-    text = Path(path).read_text(encoding="utf-8-sig", errors="replace")
+    """Parse the dotenv file at ``path`` as UTF-8, replacing bad bytes.
+
+    An ``OSError`` here (unreadable file, bad symlink, revoked ACL) is raised
+    as ``EnvParseError`` so the CLI can report it as a config error and exit 2
+    instead of dying with a traceback that exits 1 -- the code that means
+    \"drift detected\".
+    """
+    try:
+        text = Path(path).read_text(encoding="utf-8-sig", errors="replace")
+    except OSError as exc:
+        raise EnvParseError(f"cannot read env file {path}: {exc}") from exc
     return parse_text(text)
