@@ -114,9 +114,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _threshold(args: argparse.Namespace) -> str:
+    explicit = getattr(args, "fail_on", None)
+    if explicit:
+        return explicit
     if getattr(args, "strict", False):
         return "warning"
-    return getattr(args, "fail_on", None) or "error"
+    return "error"
 
 
 def _should_fail(drifts, threshold: str) -> bool:
