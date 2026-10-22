@@ -109,6 +109,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     list_parser = subparsers.add_parser("list", help="list discovered environments")
     list_parser.add_argument("path", nargs="?", default=".")
+    list_parser.add_argument(
+        "--dir",
+        dest="dir_opt",
+        metavar="PATH",
+        help="directory to scan (same as the positional PATH)",
+    )
     list_parser.add_argument("--config", metavar="FILE")
 
     return parser

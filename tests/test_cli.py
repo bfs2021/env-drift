@@ -194,6 +194,16 @@ def test_list_shows_discovered_environments(project):
     assert "production" in result.stdout
 
 
+def test_list_accepts_dir_option(project):
+    nested = project / "nested"
+    nested.mkdir()
+    (nested / ".env.staging").write_text("X=1\n", encoding="utf-8")
+
+    result = run("list", "--dir", str(nested), cwd=project, expect=0)
+
+    assert "staging" in result.stdout
+
+
 def test_config_declaring_shared_keys_silences_the_finding(tmp_path):
     (tmp_path / ".env.development").write_text("LOG_LEVEL=info\n", encoding="utf-8")
     (tmp_path / ".env.production").write_text("LOG_LEVEL=debug\n", encoding="utf-8")
